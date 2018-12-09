@@ -262,31 +262,27 @@ public:
 
     double dotProduct(double v1[3], double v2[3])
     {
-        double result=0;
-        for(int i=0;i<3;i++)
-        {
-            result+=v1[i]*v2[i];
-        }
-        return result;
+        double dot1 = v1[0] * v2[0];
+        double dot2 = v1[1] * v2[1];
+        double dot3 = v1[2] * v2[2];
+        return dot1+dot2+dot3;
     }
 
     double* mPlus(double v1[3],double v2[3])
     {
         double *result=new double[3];
-        for(int i=0;i<3;i++)
-        {
-            result[i]=v1[i]+v2[i];
-        }
+        result[0]=v1[0]+v2[0];
+        result[1]=v1[1]+v2[1];
+        result[2]=v1[2]+v2[2];
         return result;
     }
 
     double* Product(double a, double v1[3])
     {
         double *result=new double[3];
-        for(int i=0;i<3;i++)
-        {
-            result[i]=v1[i]*a;
-        }
+        result[0]=v1[0]*a;
+        result[1]=v1[1]*a;
+        result[2]=v1[2]*a;
         return result;
     }
 
@@ -299,19 +295,54 @@ public:
             sum+=(v[i]*v[i]);
         }
         sum=sqrt(sum);
-        for(int i=0;i<3;i++)
-        {
-            result[i]=v[i]*1.0/sum;
-        }
+        result[0]=v[0]/sum;
+        result[1]=v[1]/sum;
+        result[2]=v[2]/sum;
         return result;
     }
 
 
-    void diffuse(img &cl, img &cd, img &cn, img&cs, int m_x=0, int m_y=0)
+    double callShadow(img &depth, int i, int j, double xl=0, double yl=0 , double zl=0)
+    {
+        //mock 3D
+        double eps=0.01;
+        double diff_x=xl-i;
+        double diff_y=yl-j;
+        int nsh=1;
+        int steps = (int)max(diff_x,diff_y);
+        int p=0;
+ 
+
+        int x=i;
+        int y=j;
+        int depth_po=(depth.width*y+x)*3;
+        double d=depth.pixels[depth_po];
+        double z=d;
+        int counter =0;
+        while(depth.pixels[depth_po]<z && z<zl) 
+        {
+            x= i+p*(xl-i)*1.0/(double)steps;
+            y= j+p*(yl-i)*1.0/(double)steps;
+            z=d+p*(zl-d)*1.0/(double)steps;
+            depth_po=(depth.width*y+x)*3;
+            if(depth_po>width*height*3-1)
+                depth_po=width*height*3-1;
+            if(depth_po<0)
+                depth_po=0;
+        }
+        if(fabs(x-xl)<eps && fabs(y-yl)<eps)
+            nsh=1;
+        else
+            nsh=0;
+        return nsh;
+    }
+
+    void diffuse(img &cl, img &cd, img &cn, img&cs, img& depth, int m_x=0, int m_y=0)
     {
         double l[3]={-(double)m_x,-(double)m_y,-(double)width};
 
         double e[3]={0,0,1};
+
         for(int j=height-1;j>=0;j--)
         {
             for(int i=0;i<width;i++)
@@ -320,9 +351,10 @@ public:
                 double x=2*double(cn.pixels[k]/255.0)-1;
                 double y=2*double(cn.pixels[k+1]/255.0)-1;
                 double z=double(cn.pixels[k+2]/255.0);
-                double norm_sum=sqrt(x*x+y*y+z*z);
-                double n[3]={x/norm_sum,y/norm_sum,z/norm_sum};
-                
+
+                double norm_v[3]={x,y,z};
+                double *n = new double[3];
+                n=norm(norm_v);
                 double *new_l=new double[3];
                 double cpoint[3]={(double)i,(double)j,0};
 
@@ -333,6 +365,7 @@ public:
 
                 double *r=new double[3];
                 double alpha =0.5*dotProduct(n,new_l)+0.5;
+                alpha =callShadow(depth,i,j,m_x,m_y,width)*alpha;
                 r=mPlus(Product(-1,new_l),Product(2*dotProduct(n,new_l),n)); 
                 double s=0.5*r[2]+0.5;
                 for(int channel=0;channel<3;channel++)
@@ -349,7 +382,10 @@ public:
 
 
                     res=(res-spec)*(1-0.5*s)+spec;
+
                     pixels[k+channel]=res;
+                    // if(fabs(i-m_x)<10 && fabs(j-m_y)<10)
+                    //     pixels[k+channel]=255;
                 }
             }
         }

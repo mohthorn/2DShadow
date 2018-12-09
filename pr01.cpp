@@ -1,4 +1,4 @@
-//Homework11 Final Video
+//Homework12 Shading
 //ChengyiMin
 #include <cstdlib>
 #include <iostream>
@@ -32,6 +32,7 @@ img ppm_d;
 img ppm_n;
 img ppm_s;
 img new_ppm;
+img depth;
 
 int global_x=0;
 int global_y=0;
@@ -91,16 +92,16 @@ static void mouseMotion( int x, int y)
 
 static void timer( int i)
 { 
-    new_ppm.diffuse(ppm_l,ppm_d,ppm_n,ppm_s,global_x,global_y);
+    new_ppm.diffuse(ppm_l,ppm_d,ppm_n,ppm_s,depth,global_x,global_y);
     //cout<<"1"<<endl;
-    string store_name=to_string(i);
-    string fname="anim/animation";
-    char *f = new char[fname.length() + 1];
-    std::strcpy(f, fname.c_str());
-    new_ppm.ppm_store(f,store_name.c_str());
+    // string store_name=to_string(i);
+    // string fname="anim/animation";
+    // char *f = new char[fname.length() + 1];
+    // std::strcpy(f, fname.c_str());
+    //new_ppm.ppm_store(f,store_name.c_str());
     glutPostRedisplay();
-    glutPassiveMotionFunc(mouseMotion);
-    glutTimerFunc( 1000/24.0, timer, i+1 );
+    //glutPassiveMotionFunc(mouseMotion);
+    glutTimerFunc( 1000/24.0, timer, 0 );
 }
 
 
@@ -118,9 +119,9 @@ int main(int argc, char *argv[])
 {
 
     //initialize the global variables
-    if(argc!=4)
+    if(argc!=5)
     {
-        cout<<"usage: ./pr01 \'filename\' \'filename\' \'filename\'"<<endl;
+        cout<<"usage: ./pr01 \'filename\' \'filename\' \'filename\' \'filename\'"<<endl;
         return 0;
     }
     else
@@ -128,6 +129,7 @@ int main(int argc, char *argv[])
         ppm.setPixels(argv[1]);
         ppm_n.setPixels(argv[2]);
         ppm_s.setPixels(argv[3]);
+        depth.setPixels(argv[4]);
         ppm_d=img(ppm.width,ppm.height,ppm.depth);
         ppm_l=img(ppm.width,ppm.height,ppm.depth);
         new_ppm=img(ppm.width,ppm.height,ppm.depth);
@@ -142,9 +144,9 @@ int main(int argc, char *argv[])
     //actions
     string store_name=md;
     cout<<new_ppm.width<<"*"<<new_ppm.height<<endl;
-    ppm_l=ppm.lighting(100);
+    ppm_l=ppm.lighting(0);
     ppm_d=ppm.lighting(-100);
-    new_ppm.diffuse(ppm_l,ppm_d,ppm_n,ppm_s,1,1);
+    new_ppm.diffuse(ppm_l,ppm_d,ppm_n,ppm_s,depth);
     new_ppm.ppm_store(filename,store_name.c_str());
  
     glutInit(&argc, argv);
@@ -159,7 +161,7 @@ int main(int argc, char *argv[])
     //glutMotionFunc(mouseMotion);
     glutPassiveMotionFunc(mouseMotion);
     glutTimerFunc(1000/24.0, timer, 0);
-    //glClearColor(RGBWHITE, 1);
+    glClearColor(RGBWHITE, 1);
     glutMainLoop();    
     return 0; //This line never gets reached. We use it because "main" is type int.
 }
